@@ -6,3 +6,10 @@ automatically by the Skein release workflow.
 
 End users should download from the Skein landing page:
 <https://skein.buildqube.com/\>
+
+
+## Plugin Install
+
+```
+/plugin marketplace add BuildQube/skein-releases
+```

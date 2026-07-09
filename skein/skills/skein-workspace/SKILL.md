@@ -1,6 +1,6 @@
 ---
 name: skein-workspace
-description: Use when the user wants to spin up a new Skein workspace — optionally linked to a GitHub issue — with a starting prompt pre-loaded into its terminal, or to survey existing workspaces before acting. Triggers on phrases like "start a Skein workspace for issue #123", "spin up a workspace and ask it where the milestone stands", "create a Skein workspace prompted with X", "list my Skein workspaces", "what's the status of workspace X". Requires the Skein desktop app to be running and the `skein` CLI on PATH.
+description: Use when the user wants to spin up a new Skein workspace — optionally linked to a GitHub, Linear, or Airtable issue — with a starting prompt pre-loaded into its terminal, or to survey existing workspaces before acting. Triggers on phrases like "start a Skein workspace for issue #123", "spin up a workspace and ask it where the milestone stands", "create a Skein workspace prompted with X", "list my Skein workspaces", "what's the status of workspace X". Requires the Skein desktop app to be running and the `skein` CLI on PATH.
 ---
 
 # Creating a Skein workspace from a session
@@ -22,12 +22,17 @@ Use the `skein` CLI to create a workspace that materializes **live in the runnin
 
 2. **Create the workspace.** Run:
    ```
-   skein new --project <id> [--issue <owner/repo#N>] --prompt "<the starting prompt>"
+   skein new --project <id> [--issue <ref>] [--name "<name>"] --prompt "<the starting prompt>"
    ```
    - `--project` accepts the project **id** (preferred — unambiguous) or its name.
-   - `--issue` is **optional**. Include it (e.g. `--issue BuildQube/Skein#123`) only when the workspace should be linked to a specific GitHub issue; the app fetches the issue to link it. Omit it for a prompt-only workspace.
+   - `--issue` is **optional**. Include it only when the workspace should be linked to a specific issue; the app fetches the issue from its provider to link it and derive the branch **and workspace name** (both match what the in-app issue picker would produce; an explicit `--name` still wins). Omit it for a prompt-only workspace. Accepted ref shapes:
+     - **GitHub**: `owner/repo#N` (e.g. `BuildQube/Skein#123`).
+     - **Linear**: a team-key id like `ENG-42`, or a `linear.app` issue URL. Requires the project to have a Linear team connected.
+     - **Airtable**: the record's user-facing issue id (e.g. `O2178`), or an `airtable.com` record URL. Requires the project to have an Airtable binding; the bare-id form additionally needs the table profile's issue-id mapping.
+     - A `TEAM-123`-shaped ref goes to Linear when the project has a Linear team; otherwise it is tried as an Airtable issue id.
    - `--prompt` is the text pre-typed into the workspace's `claude` terminal. It is staged **unsent** — the user reviews it and presses Enter. Write the prompt as the message you'd want the workspace's agent to start from (e.g. "Where does milestone X stand, and what should come next?").
-   - `--branch <name>` is optional; omit it to let Skein derive a branch name.
+   - `--name <name>` is optional: it sets the workspace's display name. Without `--issue`, the derived branch comes from the kebab-cased name (e.g. `--name "Payment Retry Spike"` → `skein/payment-retry-spike`).
+   - `--branch <name>` is optional; omit it to let Skein derive a branch name. An explicit `--branch` always wins over derivation.
 
 3. **Report the result.** On success `skein new` prints the created workspace id — relay it. The workspace is now open in the app, its terminal booting `claude` with the prompt pre-loaded and unsent.
 

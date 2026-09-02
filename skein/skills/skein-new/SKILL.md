@@ -13,3 +13,29 @@ Shared ground rules — preconditions (app running, `skein` on PATH), error hand
    - From an issue: `skein new --project <id> --issue <ref> --prompt "<prompt>"`
    - From a name: `skein new --project <id> --name "<name>" --prompt "<prompt>"`
 4. **Report** the created workspace id that `skein new` prints. The prompt is staged **unsent** in the workspace's terminal — say so; never claim it was submitted.
+
+## Recovering from a collision
+
+`skein new` fails when something already occupies the branch or worktree path.
+The message names the variant and the way out. Two are recoverable by re-running
+the identical command with `--force`:
+
+- **"a workspace for X was archived at …"** — re-run with `--force`. It reopens
+  the archived workspace and delivers your prompt. Nothing is deleted; the
+  branch and its commits are untouched. Note it re-fires the workspace's setup
+  scripts, so it is not a no-op.
+- **"a branch named X already exists"** — re-run with `--force`. It attaches a
+  workspace to the existing branch and delivers your prompt.
+
+The rest are not `--force`-able:
+
+- **"workspace X (w_id) is already live on this branch"** — this is not a
+  failure. The workspace already exists and its id is in the message; use it.
+  `--force` deliberately does not touch a live workspace, which may have an
+  agent mid-run.
+- **"a worktree or directory Skein doesn't manage already exists at …"** and
+  **"branch X is already checked out by a worktree Skein doesn't manage"** —
+  resolve these in the desktop app, or pass `--branch` to pick a different
+  branch.
+
+`--force` never deletes a branch or a commit.

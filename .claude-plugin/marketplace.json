@@ -11,7 +11,7 @@
       "name": "skein",
       "source": "./skein",
       "description": "Create prompt-loaded Skein workspaces from an agent session",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "author": {
         "name": "BuildQube"
       },

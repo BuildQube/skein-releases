@@ -10,7 +10,7 @@ Use the `skein` CLI to create a workspace that materializes **live in the runnin
 ## Preconditions — check these first
 
 1. **The Skein desktop app must be running.** If any `skein` command fails with "Skein isn't running", tell the user to open the Skein app, then retry. Do not try to launch it yourself.
-2. **The `skein` binary must be on PATH.** Check with `command -v skein`. If it's missing, tell the user to open Skein → Settings and run the **"Install `skein` CLI"** action, then retry. Do **not** attempt to install or locate the binary yourself.
+2. **The `skein` binary must be on PATH.** Check with `command -v skein`. If it's missing, tell the user to open Skein → Settings → **Companion CLI** and click **Install**, then retry. Do **not** attempt to install or locate the binary yourself.
 
 ## Steps
 
@@ -33,6 +33,7 @@ Use the `skein` CLI to create a workspace that materializes **live in the runnin
    - `--prompt` is the text pre-typed into the workspace's `claude` terminal. It is staged **unsent** — the user reviews it and presses Enter. Write the prompt as the message you'd want the workspace's agent to start from (e.g. "Where does milestone X stand, and what should come next?").
    - `--name <name>` is optional: it sets the workspace's display name. Without `--issue`, the derived branch comes from the kebab-cased name (e.g. `--name "Payment Retry Spike"` → `skein/payment-retry-spike`).
    - `--branch <name>` is optional; omit it to let Skein derive a branch name. An explicit `--branch` always wins over derivation.
+   - There is **no `--base` flag** yet ([#1260](https://github.com/BuildQube/Skein/issues/1260)): a new branch is always cut from the project's default branch. To stack on another branch, create the branch off that base yourself (`git branch <new> <base>` in the project repo), then run `skein new --branch <new> --force`. The "branch already exists" collision is `--force`-able and attaches a workspace to it. The attached workspace records **no base branch**, so tell the user the PR base must be set explicitly, and say so in the prompt.
 
 3. **Report the result.** On success `skein new` prints the created workspace id — relay it. The workspace is now open in the app, its terminal booting `claude` with the prompt pre-loaded and unsent.
 
@@ -58,4 +59,5 @@ create a new workspace or point the user at an existing one. Both are read-only.
 
 - This **stages** the prompt; it does **not** run it. The user reviews and sends it. Never tell the user the prompt has been submitted.
 - On a worktree collision, an unknown/ambiguous project, or the app not running, `skein` exits non-zero with a clear message — **relay that message and stop**; don't retry blindly or guess a different project.
+- Any **other** non-zero exit (e.g. a database or spawn error) can leave the workspace already created with its prompt undelivered. Run `skein list --project <id> --json` before suggesting anything. If the workspace is there, give the user its id and the prompt text to paste into its terminal. **Don't suggest re-running `skein new`**: against a live workspace it returns the "already live on this branch" collision, which `--force` deliberately won't touch, so the prompt is never re-delivered.
 - The workspace linkage and prefill use the same machinery as Skein's in-app "start from issue" flow, so the result is identical to what the user would get clicking through the UI.

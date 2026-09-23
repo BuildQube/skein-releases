@@ -39,3 +39,5 @@ The rest are not `--force`-able:
   branch.
 
 `--force` never deletes a branch or a commit.
+
+A failure that isn't a collision or "Skein isn't running" may leave the workspace created with its prompt undelivered. Don't re-run; follow *Important notes* in [`../skein-workspace/SKILL.md`](../skein-workspace/SKILL.md), which also covers stacking on a non-default base branch.

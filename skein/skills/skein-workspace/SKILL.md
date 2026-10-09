@@ -1,6 +1,6 @@
 ---
 name: skein-workspace
-description: Use when the user wants to spin up a new Skein workspace — optionally linked to a GitHub, Linear, or Airtable issue — with a starting prompt pre-loaded into its terminal, or to survey existing workspaces before acting. Triggers on phrases like "start a Skein workspace for issue #123", "spin up a workspace and ask it where the milestone stands", "create a Skein workspace prompted with X", "list my Skein workspaces", "what's the status of workspace X". Requires the Skein desktop app to be running and the `skein` CLI on PATH.
+description: "Use when the user wants to spin up a new Skein workspace — optionally linked to a GitHub, Linear, or Airtable issue — with a starting prompt pre-loaded into its terminal, or to survey existing workspaces before acting. Triggers on phrases like \"start a Skein workspace for issue #123\", \"spin up a workspace and ask it where the primary issue stands\", \"create a Skein workspace prompted with X\", \"list my Skein workspaces\", \"what's the status of workspace X\". Requires the Skein desktop app to be running and the `skein` CLI on PATH."
 ---
 
 # Creating a Skein workspace from a session
@@ -22,15 +22,16 @@ Use the `skein` CLI to create a workspace that materializes **live in the runnin
 
 2. **Create the workspace.** Run:
    ```
-   skein new --project <id> [--issue <ref>] [--name "<name>"] --prompt "<the starting prompt>"
+   skein new --project <id> [--issue <ref>]... [--name "<name>"] --prompt "<the starting prompt>"
    ```
    - `--project` accepts the project **id** (preferred — unambiguous) or its name.
-   - `--issue` is **optional**. Include it only when the workspace should be linked to a specific issue; the app fetches the issue from its provider to link it and derive the branch **and workspace name** (both match what the in-app issue picker would produce; an explicit `--name` still wins). Omit it for a prompt-only workspace. Accepted ref shapes:
+   - `--issue` is **optional** and **repeatable**: the first is the workspace's primary issue (names the branch, fills `{id}`); later ones become linked extras, and a failure on an extra prints `warning:` without blocking the create. Include it only when the workspace should be linked to a specific issue; the app fetches the issue from its provider to link it and derive the branch **and workspace name** (both match what the in-app issue picker would produce; an explicit `--name` still wins). Omit it for a prompt-only workspace. Accepted ref shapes:
+     - **GitHub (project issues repo)**: `#123`, or a GitHub issue/PR URL. GitHub extras must come from the project's bound issues repo.
      - **GitHub**: `owner/repo#N` (e.g. `BuildQube/Skein#123`).
      - **Linear**: a team-key id like `ENG-42`, or a `linear.app` issue URL. Requires the project to have a Linear team connected.
      - **Airtable**: the record's user-facing issue id (e.g. `O2178`), or an `airtable.com` record URL. Requires the project to have an Airtable binding; the bare-id form additionally needs the table profile's issue-id mapping.
      - A `TEAM-123`-shaped ref goes to Linear when the project has a Linear team; otherwise it is tried as an Airtable issue id.
-   - `--prompt` is the text pre-typed into the workspace's `claude` terminal. It is staged **unsent** — the user reviews it and presses Enter. Write the prompt as the message you'd want the workspace's agent to start from (e.g. "Where does milestone X stand, and what should come next?").
+   - `--prompt` is the text pre-typed into the workspace's `claude` terminal. It is staged **unsent** — the user reviews it and presses Enter. Write the prompt as the message you'd want the workspace's agent to start from (e.g. "Where does issue X stand, and what should come next?").
    - `--name <name>` is optional: it sets the workspace's display name. Without `--issue`, the derived branch comes from the kebab-cased name (e.g. `--name "Payment Retry Spike"` → `skein/payment-retry-spike`).
    - `--branch <name>` is optional; omit it to let Skein derive a branch name. An explicit `--branch` always wins over derivation.
    - There is **no `--base` flag** yet ([#1260](https://github.com/BuildQube/Skein/issues/1260)): a new branch is always cut from the project's default branch. To stack on another branch, create the branch off that base yourself (`git branch <new> <base>` in the project repo), then run `skein new --branch <new> --force`. The "branch already exists" collision is `--force`-able and attaches a workspace to it. The attached workspace records **no base branch**, so tell the user the PR base must be set explicitly, and say so in the prompt.
@@ -45,15 +46,52 @@ current workspace state instead of guessing:
 - **List them all.** `skein list [--project <id|name>] --json` prints every
   active/pending workspace across all projects (archived excluded), each with
   its `project`, `domain`, `branch`, `status`, and `linked_issue` (the
-  milestone). Filter to one project with `--project`.
+  primary issue). Filter to one project with `--project`.
 - **Inspect one.** `skein status <ws> --json` prints one workspace's full state
   — branch/base, worktree path, origin, the linked issue (title/state/url), and
   any setup error. `<ws>` is a workspace **id** (preferred) or a **name** that
   is unique across all projects; an ambiguous name exits non-zero and lists the
   matching ids — retry with one of them.
 
-Use these to answer "where does milestone X stand?" before deciding whether to
-create a new workspace or point the user at an existing one. Both are read-only.
+- **Archive.** `skein archive <ws>... [--force] [--json]` archives workspaces
+  (ids, or names unique across all projects; all refs are resolved first, so a
+  bad one archives nothing). Branches are kept. A workspace with uncommitted
+  changes is refused unless `--force`, which **discards** that work — only pass
+  it when the user explicitly says so. Exit 1 if any was refused or failed.
+  `skein archive -i` is interactive (needs a TTY) — don't run it yourself.
+  It refuses to archive the workspace you're running in (its worktree is your
+  current directory or an ancestor of it) — run it from elsewhere.
+  `skein list` shows last activity, stalest first per project, to pick
+  candidates.
+
+## Working with a workspace's issues and PR
+
+A workspace has one **primary issue** plus any number of **linked issues**.
+`<ws>`/`-w` default to the workspace containing the current directory, so
+inside a worktree you can omit it. Every command below accepts `--json`.
+
+- `skein issues [ws]` lists the primary (`★ primary`) then the extras; extras
+  that came from the PR body are suffixed `(from PR)`.
+- `skein issues add [-w ws] <ref>...` links more issues.
+- `skein issues rm [-w ws] <ref>...` unlinks. Removing the primary clears it
+  (no auto-promotion). A ref that only comes from the PR body is refused —
+  edit the PR to drop it.
+- `skein issues primary [-w ws] <ref>` promotes a ref; the old primary stays
+  linked as an extra.
+- `skein pr [ws] [--refresh]` shows the branch's PR (`#N title state · checks
+  url`) from the app's cache; `--refresh` fetches from GitHub. Prints
+  `No PR for branch <branch>` when there is none.
+
+Ref shapes: `#123` (the project's issues repo), `owner/repo#123`, GitHub
+issue/PR URLs, `ENG-42` (Linear), `O2178` (Airtable), and linear.app /
+airtable.com URLs. GitHub extras must come from the project's bound GitHub
+issues repo. Quote `#N` refs in the shell (`'#123'`): an unquoted `#` starts a
+comment. Mutations exit 1 only if every ref failed.
+
+Use these to answer "where does issue X stand?" before deciding whether to
+create a new workspace or point the user at an existing one.
+
+`list` and `status` are read-only.
 
 ## Important notes
 

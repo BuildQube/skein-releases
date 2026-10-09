@@ -11,6 +11,7 @@ Shared ground rules — preconditions (app running, `skein` on PATH), error hand
 2. **Resolve the project id**: run `skein projects --json` and pick the matching project. If no project was stated and exactly one exists, use it; otherwise ask the user to pick by `domain/name`.
 3. **Create** (one command, no survey first):
    - From an issue: `skein new --project <id> --issue <ref> --prompt "<prompt>"`
+   - From several issues: repeat `--issue`. The first is the **primary** and names the branch; later ones become linked extras. A failure on an extra prints `warning:` to stderr and does not block the create. Example: `skein new --project skein --issue '#1309' --issue ENG-42 --prompt "…"`
    - From a name: `skein new --project <id> --name "<name>" --prompt "<prompt>"`
 4. **Report** the created workspace id that `skein new` prints. The prompt is staged **unsent** in the workspace's terminal — say so; never claim it was submitted.
 

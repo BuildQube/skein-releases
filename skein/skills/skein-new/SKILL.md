@@ -13,7 +13,9 @@ Shared ground rules — preconditions (app running, `skein` on PATH), error hand
    - From an issue: `skein new --project <id> --issue <ref> --prompt "<prompt>"`
    - From several issues: repeat `--issue`. The first is the **primary** and names the branch; later ones become linked extras. A failure on an extra prints `warning:` to stderr and does not block the create. Example: `skein new --project skein --issue '#1309' --issue ENG-42 --prompt "…"`
    - From a name: `skein new --project <id> --name "<name>" --prompt "<prompt>"`
-4. **Report** the created workspace id that `skein new` prints. The prompt is staged **unsent** in the workspace's terminal — say so; never claim it was submitted.
+   - Add `--submit` **only** when the user asked for the prompt to run straight away ("and kick it off", "submit it", "auto-run"). Default is staged.
+   - Tags: add `--tag <name>` (repeatable) when the user names tags. Unknown names are created as project tags; a tag that can't be applied prints `warning:` and does not block the create.
+4. **Report** the created workspace id that `skein new` prints. Without `--submit` the prompt is staged **unsent** in the workspace's terminal — say so; never claim it was submitted. With `--submit`, say it will be sent once claude is ready (it stays unsent if claude's prompt is never detected).
 
 ## Recovering from a collision
 

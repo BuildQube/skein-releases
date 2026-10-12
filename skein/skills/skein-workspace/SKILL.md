@@ -5,7 +5,7 @@ description: "Use when the user wants to spin up a new Skein workspace — optio
 
 # Creating a Skein workspace from a session
 
-Use the `skein` CLI to create a workspace that materializes **live in the running Skein desktop app**, with a starting prompt pre-typed (but **unsent**) into its terminal running `claude`.
+Use the `skein` CLI to create a workspace that materializes **live in the running Skein desktop app**, with a starting prompt pre-typed (but **unsent**, unless `--submit`) into its terminal running `claude`.
 
 ## Preconditions — check these first
 
@@ -22,7 +22,7 @@ Use the `skein` CLI to create a workspace that materializes **live in the runnin
 
 2. **Create the workspace.** Run:
    ```
-   skein new --project <id> [--issue <ref>]... [--name "<name>"] --prompt "<the starting prompt>"
+   skein new --project <id> [--issue <ref>]... [--name "<name>"] --prompt "<the starting prompt>" [--submit]
    ```
    - `--project` accepts the project **id** (preferred — unambiguous) or its name.
    - `--issue` is **optional** and **repeatable**: the first is the workspace's primary issue (names the branch, fills `{id}`); later ones become linked extras, and a failure on an extra prints `warning:` without blocking the create. Include it only when the workspace should be linked to a specific issue; the app fetches the issue from its provider to link it and derive the branch **and workspace name** (both match what the in-app issue picker would produce; an explicit `--name` still wins). Omit it for a prompt-only workspace. Accepted ref shapes:
@@ -31,7 +31,7 @@ Use the `skein` CLI to create a workspace that materializes **live in the runnin
      - **Linear**: a team-key id like `ENG-42`, or a `linear.app` issue URL. Requires the project to have a Linear team connected.
      - **Airtable**: the record's user-facing issue id (e.g. `O2178`), or an `airtable.com` record URL. Requires the project to have an Airtable binding; the bare-id form additionally needs the table profile's issue-id mapping.
      - A `TEAM-123`-shaped ref goes to Linear when the project has a Linear team; otherwise it is tried as an Airtable issue id.
-   - `--prompt` is the text pre-typed into the workspace's `claude` terminal. It is staged **unsent** — the user reviews it and presses Enter. Write the prompt as the message you'd want the workspace's agent to start from (e.g. "Where does issue X stand, and what should come next?").
+   - `--prompt` is the text pre-typed into the workspace's `claude` terminal. It is staged **unsent** — the user reviews it and presses Enter. Pass `--submit` **only** when the user asked for the prompt to run immediately; it then sends once claude is ready (and stays unsent if claude's prompt is never detected). Write the prompt as the message you'd want the workspace's agent to start from (e.g. "Where does issue X stand, and what should come next?").
    - `--name <name>` is optional: it sets the workspace's display name. Without `--issue`, the derived branch comes from the kebab-cased name (e.g. `--name "Payment Retry Spike"` → `skein/payment-retry-spike`).
    - `--branch <name>` is optional; omit it to let Skein derive a branch name. An explicit `--branch` always wins over derivation.
    - There is **no `--base` flag** yet ([#1260](https://github.com/BuildQube/Skein/issues/1260)): a new branch is always cut from the project's default branch. To stack on another branch, create the branch off that base yourself (`git branch <new> <base>` in the project repo), then run `skein new --branch <new> --force`. The "branch already exists" collision is `--force`-able and attaches a workspace to it. The attached workspace records **no base branch**, so tell the user the PR base must be set explicitly, and say so in the prompt.
@@ -82,6 +82,12 @@ inside a worktree you can omit it. Every command below accepts `--json`.
   url`) from the app's cache; `--refresh` fetches from GitHub. Prints
   `No PR for branch <branch>` when there is none.
 
+- `skein tags [ws]` lists the workspace's user tags. `skein tags add [-w ws]
+  <name>...` tags it (names match case-insensitively; an unknown name is
+  created as a project tag); `skein tags rm [-w ws] <name>...` untags it.
+  System tags (Running, Linked, project/domain name, …) are computed and
+  refused. Tag at create time with `skein new … --tag <name>` (repeatable).
+
 Ref shapes: `#123` (the project's issues repo), `owner/repo#123`, GitHub
 issue/PR URLs, `ENG-42` (Linear), `O2178` (Airtable), and linear.app /
 airtable.com URLs. GitHub extras must come from the project's bound GitHub
@@ -95,7 +101,7 @@ create a new workspace or point the user at an existing one.
 
 ## Important notes
 
-- This **stages** the prompt; it does **not** run it. The user reviews and sends it. Never tell the user the prompt has been submitted.
+- Without `--submit` this **stages** the prompt; it does **not** run it. The user reviews and sends it. Never tell the user a staged prompt has been submitted.
 - On a worktree collision, an unknown/ambiguous project, or the app not running, `skein` exits non-zero with a clear message — **relay that message and stop**; don't retry blindly or guess a different project.
 - Any **other** non-zero exit (e.g. a database or spawn error) can leave the workspace already created with its prompt undelivered. Run `skein list --project <id> --json` before suggesting anything. If the workspace is there, give the user its id and the prompt text to paste into its terminal. **Don't suggest re-running `skein new`**: against a live workspace it returns the "already live on this branch" collision, which `--force` deliberately won't touch, so the prompt is never re-delivered.
 - The workspace linkage and prefill use the same machinery as Skein's in-app "start from issue" flow, so the result is identical to what the user would get clicking through the UI.

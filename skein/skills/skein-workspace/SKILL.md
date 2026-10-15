@@ -1,6 +1,6 @@
 ---
 name: skein-workspace
-description: "Use when the user wants to spin up a new Skein workspace — optionally linked to a GitHub, Linear, or Airtable issue — with a starting prompt pre-loaded into its terminal, or to survey existing workspaces before acting. Triggers on phrases like \"start a Skein workspace for issue #123\", \"spin up a workspace and ask it where the primary issue stands\", \"create a Skein workspace prompted with X\", \"list my Skein workspaces\", \"what's the status of workspace X\". Requires the Skein desktop app to be running and the `skein` CLI on PATH."
+description: "Use when the user wants to spin up a new Skein workspace — optionally linked to a GitHub, Linear, or Airtable issue — with a starting prompt pre-loaded into its terminal, or to survey existing workspaces before acting. Triggers on phrases like \"start a Skein workspace for issue #123\", \"spin up a workspace and ask it where the primary issue stands\", \"create a Skein workspace prompted with X\", \"list my Skein workspaces\", \"what's the status of workspace X\", \"rename this workspace to Y\". Requires the Skein desktop app to be running and the `skein` CLI on PATH."
 ---
 
 # Creating a Skein workspace from a session
@@ -63,6 +63,9 @@ current workspace state instead of guessing:
   current directory or an ancestor of it) — run it from elsewhere.
   `skein list` shows last activity, stalest first per project, to pick
   candidates.
+- **Rename.** `skein rename "<new name>" [-w ws] [--json]` changes a
+  workspace's display name; the branch is untouched. `-w` defaults to the
+  workspace containing the current directory. Blank names are refused.
 
 ## Working with a workspace's issues and PR
 

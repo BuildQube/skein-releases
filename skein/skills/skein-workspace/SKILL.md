@@ -63,6 +63,7 @@ current workspace state instead of guessing:
   current directory or an ancestor of it) — run it from elsewhere.
   `skein list` shows last activity, stalest first per project, to pick
   candidates.
+- **Parent/child.** `skein new --parent <ws>` creates a child of an orchestrator workspace (never implied). `skein move <ws>... (--parent <ws> | --top-level) [--json]` re-parents; one level only, same project. `skein list --parent <ws>` lists a parent's children. `skein archive <ws>... --with-children` archives children first, then the parent (archiving a parent alone promotes its children to top level). `parent_id` appears in `list`/`status` JSON (`null` for top level).
 - **Rename.** `skein rename "<new name>" [-w ws] [--json]` changes a
   workspace's display name; the branch is untouched. `-w` defaults to the
   workspace containing the current directory. Blank names are refused.
